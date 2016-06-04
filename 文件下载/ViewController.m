@@ -19,6 +19,8 @@
 // 已下载的长度
 @property (nonatomic, assign) long long hasDownloadContentLength;
 
+// 拿到连接，进行暂停和恢复
+@property (nonatomic, strong) NSURLConnection *downloadConnection;
 
 @end
 
@@ -40,7 +42,7 @@
         // 2.发送请求
         NSURLRequest *request = [NSURLRequest requestWithURL:url];
         //3. 建立连接，发送请求
-        [NSURLConnection connectionWithRequest:request delegate:self];
+      self.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
         
         //4. 子线程要手动开启运行循环
         [[NSRunLoop currentRunLoop] run];
@@ -51,9 +53,32 @@
 
 - (IBAction)suspend:(id)sender {
  
+    [self.downloadConnection cancel];
 }
 
 - (IBAction)resume:(id)sender {
+
+    // 子线程进行下载
+#pragma mark - block中为防止循环应用，定义弱指针
+    __weak typeof(self) wself = self;
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        
+        // 1. NSURL
+        NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/videos.zip"];
+        // 2.发送请求
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+        // 2.1 设置请求头
+        NSString *value = [NSString stringWithFormat:@"bytes=%lld-",self.hasDownloadContentLength];
+        
+        [request setValue:value forHTTPHeaderField:@"Range"];
+        
+        //3. 建立连接，发送请求
+        self.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
+        
+        //4. 子线程要手动开启运行循环
+        [[NSRunLoop currentRunLoop] run];
+        
+    });
 
 }
 
