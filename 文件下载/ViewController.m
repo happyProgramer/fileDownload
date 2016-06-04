@@ -73,7 +73,7 @@
         [request setValue:value forHTTPHeaderField:@"Range"];
         
         //3. 建立连接，发送请求
-        self.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
+        wself.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
         
         //4. 子线程要手动开启运行循环
         [[NSRunLoop currentRunLoop] run];
