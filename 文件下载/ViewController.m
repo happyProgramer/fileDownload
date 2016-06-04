@@ -36,13 +36,15 @@
 #pragma mark - block中为防止循环应用，定义弱指针
     __weak typeof(self) wself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        //0.发送HEAD的请求获取文件的大小
+        [self getTotalContentLength];
         
         // 1. NSURL
         NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/videos.zip"];
         // 2.发送请求
         NSURLRequest *request = [NSURLRequest requestWithURL:url];
         //3. 建立连接，发送请求
-      self.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
+      wself.downloadConnection = [NSURLConnection connectionWithRequest:request delegate:self];
         
         //4. 子线程要手动开启运行循环
         [[NSRunLoop currentRunLoop] run];
@@ -62,6 +64,8 @@
 #pragma mark - block中为防止循环应用，定义弱指针
     __weak typeof(self) wself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        //0.发送HEAD的请求获取文件的大小
+        [self getTotalContentLength];
         
         // 1. NSURL
         NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/videos.zip"];
@@ -82,12 +86,33 @@
 
 }
 
+
+-(void)getTotalContentLength{
+    // 1. NSURL
+    NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/videos.zip"];
+    // 2.发送请求
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    // 2.1 设置请求方式
+     request.HTTPMethod = @"HEAD";
+    
+#pragma mark - HEAD请求只发送请求行和请求头，不包含请求体
+    NSURLResponse *response = nil;
+    // 3.建立连接，发送请求
+   NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:NULL];
+    
+    NSLog(@"HEAD----%ld",data.length);
+    
+    self.expectedContentLength = response.expectedContentLength;
+    
+    NSLog(@"HEAD 获取文件的大小 --- %lld",self.expectedContentLength);
+
+}
+
 #pragma mark - 实现代理方法
 // 接受服务器的响应,只调用一次
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response{
     NSLog(@"----接收服务器的响应----%@",[NSThread currentThread]);
     
-    self.expectedContentLength = response.expectedContentLength;
     // 1. 获取沙盒路径
     NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
     // 1.1 拼接路径
